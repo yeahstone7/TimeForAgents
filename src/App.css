@@ -137,6 +137,25 @@
   border-radius: 14px;
 }
 
+.react-flow__edge-path {
+  stroke-width: 2.4;
+  stroke-dasharray: none;
+}
+
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke-width: 3.2;
+}
+
+.react-flow__edge.animated path {
+  stroke-dasharray: none;
+  animation: none;
+}
+
+.react-flow__node.selected .node-card {
+  border-color: #0b8f78;
+  box-shadow: 0 0 0 2px rgba(10, 164, 138, 0.22), 0 8px 24px rgba(40, 84, 108, 0.14);
+}
+
 .node-card {
   min-width: 220px;
   padding: 0.7rem 0.85rem;
@@ -157,6 +176,20 @@
 
 .node-card strong {
   font-size: 0.95rem;
+}
+
+.node-card .node-title {
+  cursor: text;
+}
+
+.node-title-input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.28rem 0.4rem;
+  font-size: 0.92rem;
+  font-weight: 600;
 }
 
 .node-card header span {
@@ -263,6 +296,45 @@
 .context-content h3 {
   margin: 0;
   font-size: 0.95rem;
+}
+
+.rename-panel {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.55rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.rename-panel h4 {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--ink-700);
+}
+
+.rename-row {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.rename-row input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.38rem 0.45rem;
+  background: #fff;
+}
+
+.multi-node-menu-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.multi-node-menu-item {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.55rem;
 }
 
 .history-panel {

@@ -1,4 +1,5 @@
 import { Handle, Position, type NodeProps } from '@xyflow/react'
+import { useEffect, useRef, useState } from 'react'
 import { useWorkbenchStore } from '../../store/useWorkbenchStore'
 import type { DataCellNode as DataCellFlowNode } from '../../domain/types'
 
@@ -6,21 +7,27 @@ export const DataCellNodeView = ({
   id,
   data,
 }: NodeProps<DataCellFlowNode>) => {
-  const openContextMenu = useWorkbenchStore((state) => state.openContextMenu)
+  const renameNode = useWorkbenchStore((state) => state.renameNode)
+  const titleInputRef = useRef<HTMLInputElement>(null)
+  const [isEditingLabel, setIsEditingLabel] = useState(false)
+  const [draftLabel, setDraftLabel] = useState(data.label)
+
+  useEffect(() => {
+    if (!isEditingLabel) {
+      return
+    }
+
+    titleInputRef.current?.focus()
+    titleInputRef.current?.select()
+  }, [isEditingLabel])
+
+  const commitRename = () => {
+    renameNode(id, draftLabel)
+    setIsEditingLabel(false)
+  }
 
   return (
-    <article
-      className="node-card data-cell-node"
-      onContextMenu={(event) => {
-        event.preventDefault()
-        openContextMenu({
-          kind: 'dataCell',
-          nodeId: id,
-          x: event.clientX,
-          y: event.clientY,
-        })
-      }}
-    >
+    <article className="node-card data-cell-node">
       <Handle
         id="stackIn"
         type="target"
@@ -29,7 +36,36 @@ export const DataCellNodeView = ({
       />
 
       <header>
-        <strong>{data.label}</strong>
+        {isEditingLabel ? (
+          <input
+            ref={titleInputRef}
+            className="node-title-input nodrag"
+            value={draftLabel}
+            onChange={(event) => setDraftLabel(event.target.value)}
+            onBlur={commitRename}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                commitRename()
+              }
+              if (event.key === 'Escape') {
+                setDraftLabel(data.label)
+                setIsEditingLabel(false)
+              }
+            }}
+          />
+        ) : (
+          <strong
+            className="node-title"
+            onDoubleClick={(event) => {
+              event.stopPropagation()
+              setDraftLabel(data.label)
+              setIsEditingLabel(true)
+            }}
+            title="双击重命名"
+          >
+            {data.label}
+          </strong>
+        )}
         <span>数据格</span>
       </header>
 

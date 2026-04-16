@@ -61,6 +61,18 @@ export type ContextMenuState =
       y: number
     }
   | {
+      kind: 'multiNode'
+      nodeIds: string[]
+      x: number
+      y: number
+    }
+  | {
+      kind: 'edge'
+      edgeId: string
+      x: number
+      y: number
+    }
+  | {
       kind: 'canvas'
       x: number
       y: number

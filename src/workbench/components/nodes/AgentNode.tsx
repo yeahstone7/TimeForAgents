@@ -1,10 +1,10 @@
 import { Handle, Position, type NodeProps } from '@xyflow/react'
+import { useEffect, useRef, useState } from 'react'
 import { useWorkbenchStore } from '../../store/useWorkbenchStore'
 import type { AgentNode as AgentFlowNode } from '../../domain/types'
 
 export const AgentNodeView = ({ id, data }: NodeProps<AgentFlowNode>) => {
-  const openContextMenu = useWorkbenchStore((state) => state.openContextMenu)
-
+  const renameNode = useWorkbenchStore((state) => state.renameNode)
   const runtime = useWorkbenchStore((state) => {
     const task = state.tasks.find((item) => item.id === state.activeTaskId)!
     return task.agentStates[id]
@@ -12,20 +12,26 @@ export const AgentNodeView = ({ id, data }: NodeProps<AgentFlowNode>) => {
   const currentHistory = runtime.histories.find(
     (item) => item.id === runtime.activeHistoryId,
   )!
+  const titleInputRef = useRef<HTMLInputElement>(null)
+  const [isEditingLabel, setIsEditingLabel] = useState(false)
+  const [draftLabel, setDraftLabel] = useState(data.label)
+
+  useEffect(() => {
+    if (!isEditingLabel) {
+      return
+    }
+
+    titleInputRef.current?.focus()
+    titleInputRef.current?.select()
+  }, [isEditingLabel])
+
+  const commitRename = () => {
+    renameNode(id, draftLabel)
+    setIsEditingLabel(false)
+  }
 
   return (
-    <article
-      className="node-card agent-node"
-      onContextMenu={(event) => {
-        event.preventDefault()
-        openContextMenu({
-          kind: 'agent',
-          nodeId: id,
-          x: event.clientX,
-          y: event.clientY,
-        })
-      }}
-    >
+    <article className="node-card agent-node">
       <Handle
         id="input"
         type="target"
@@ -34,7 +40,36 @@ export const AgentNodeView = ({ id, data }: NodeProps<AgentFlowNode>) => {
       />
 
       <header>
-        <strong>{data.label}</strong>
+        {isEditingLabel ? (
+          <input
+            ref={titleInputRef}
+            className="node-title-input nodrag"
+            value={draftLabel}
+            onChange={(event) => setDraftLabel(event.target.value)}
+            onBlur={commitRename}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                commitRename()
+              }
+              if (event.key === 'Escape') {
+                setDraftLabel(data.label)
+                setIsEditingLabel(false)
+              }
+            }}
+          />
+        ) : (
+          <strong
+            className="node-title"
+            onDoubleClick={(event) => {
+              event.stopPropagation()
+              setDraftLabel(data.label)
+              setIsEditingLabel(true)
+            }}
+            title="双击重命名"
+          >
+            {data.label}
+          </strong>
+        )}
         <span>Agent</span>
       </header>
 

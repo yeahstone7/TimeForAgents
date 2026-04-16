@@ -1,11 +1,53 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useWorkbenchStore } from '../../store/useWorkbenchStore'
-import type { DataCellNode } from '../../domain/types'
+import type { DataCellNode, FlowNode } from '../../domain/types'
 
-const AgentContextMenu = ({ nodeId }: { nodeId: string }) => {
+const RenameNodePanel = ({
+  nodeId,
+  currentLabel,
+}: {
+  nodeId: string
+  currentLabel: string
+}) => {
+  const renameNode = useWorkbenchStore((state) => state.renameNode)
+  const [draftLabel, setDraftLabel] = useState(currentLabel)
+
+  const commitRename = () => {
+    renameNode(nodeId, draftLabel)
+  }
+
+  return (
+    <section className="rename-panel">
+      <h4>重命名组件</h4>
+      <div className="rename-row">
+        <input
+          value={draftLabel}
+          onChange={(event) => setDraftLabel(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              commitRename()
+            }
+          }}
+        />
+        <button type="button" onClick={commitRename}>
+          保存名称
+        </button>
+      </div>
+    </section>
+  )
+}
+
+const AgentContextMenu = ({
+  nodeId,
+  title = 'Agent 操作',
+}: {
+  nodeId: string
+  title?: string
+}) => {
   const task = useWorkbenchStore((state) =>
     state.tasks.find((item) => item.id === state.activeTaskId),
   )!
+  const agentNode = task.nodes.find((node) => node.id === nodeId && node.type === 'agent')!
 
   const runtime = task.agentStates[nodeId]
   const currentHistory = runtime.histories.find(
@@ -21,7 +63,7 @@ const AgentContextMenu = ({ nodeId }: { nodeId: string }) => {
 
   return (
     <section className="context-content">
-      <h3>Agent 操作</h3>
+      <h3>{title}</h3>
       <button
         className="primary-action"
         type="button"
@@ -41,6 +83,7 @@ const AgentContextMenu = ({ nodeId }: { nodeId: string }) => {
       <button type="button" onClick={() => resetAgentMemory(nodeId)}>
         重置记忆
       </button>
+      <RenameNodePanel nodeId={nodeId} currentLabel={agentNode.data.label} />
 
       <div className="history-panel">
         <header>
@@ -91,7 +134,13 @@ const AgentContextMenu = ({ nodeId }: { nodeId: string }) => {
   )
 }
 
-const DataCellContextMenu = ({ nodeId }: { nodeId: string }) => {
+const DataCellContextMenu = ({
+  nodeId,
+  title = '数据格管理',
+}: {
+  nodeId: string
+  title?: string
+}) => {
   const task = useWorkbenchStore((state) =>
     state.tasks.find((item) => item.id === state.activeTaskId),
   )!
@@ -107,11 +156,12 @@ const DataCellContextMenu = ({ nodeId }: { nodeId: string }) => {
   return (
     <section className="context-content">
       <div className="data-header">
-        <h3>数据格管理</h3>
+        <h3>{title}</h3>
         <button type="button" onClick={() => addStackItem(nodeId)}>
           新增数据
         </button>
       </div>
+      <RenameNodePanel nodeId={nodeId} currentLabel={dataCell.data.label} />
 
       <ul className="stack-editor-list">
         {dataCell.data.stack.map((item, index) => (
@@ -157,6 +207,38 @@ const DataCellContextMenu = ({ nodeId }: { nodeId: string }) => {
   )
 }
 
+const MultiNodeContextMenu = ({ nodeIds }: { nodeIds: string[] }) => {
+  const task = useWorkbenchStore((state) =>
+    state.tasks.find((item) => item.id === state.activeTaskId),
+  )!
+
+  const nodes = nodeIds
+    .map((nodeId) => task.nodes.find((node) => node.id === nodeId))
+    .filter(Boolean) as FlowNode[]
+
+  return (
+    <section className="context-content">
+      <h3>多选组件菜单</h3>
+      <p className="empty-memory">已选中 {nodes.length} 个组件</p>
+
+      <div className="multi-node-menu-list">
+        {nodes.map((node) => (
+          <div className="multi-node-menu-item" key={node.id}>
+            {node.type === 'agent' ? (
+              <AgentContextMenu nodeId={node.id} title={`Agent 操作 · ${node.data.label}`} />
+            ) : (
+              <DataCellContextMenu
+                nodeId={node.id}
+                title={`数据格管理 · ${node.data.label}`}
+              />
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 const CanvasContextMenu = ({
   flowX,
   flowY,
@@ -183,6 +265,24 @@ const CanvasContextMenu = ({
       >
         在此处新增 数据格
       </button>
+    </section>
+  )
+}
+
+const EdgeContextMenu = ({ edgeId }: { edgeId: string }) => {
+  const deleteEdge = useWorkbenchStore((state) => state.deleteEdge)
+
+  return (
+    <section className="context-content">
+      <h3>连线操作</h3>
+      <button
+        className="primary-action"
+        type="button"
+        onClick={() => deleteEdge(edgeId)}
+      >
+        删除这条连线
+      </button>
+      <p className="empty-memory">提示：拖动组件端口即可新增连线。</p>
     </section>
   )
 }
@@ -230,6 +330,10 @@ export const NodeContextMenu = () => {
         ) : null}
         {contextMenu.kind === 'canvas' ? (
           <CanvasContextMenu flowX={contextMenu.flowX} flowY={contextMenu.flowY} />
+        ) : null}
+        {contextMenu.kind === 'edge' ? <EdgeContextMenu edgeId={contextMenu.edgeId} /> : null}
+        {contextMenu.kind === 'multiNode' ? (
+          <MultiNodeContextMenu nodeIds={contextMenu.nodeIds} />
         ) : null}
       </aside>
     </div>

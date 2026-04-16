@@ -59,11 +59,84 @@ export const WorkbenchCanvas = () => {
         panOnScrollMode={PanOnScrollMode.Free}
         zoomOnScroll={false}
         zoomOnPinch
-        panOnDrag
+        panOnDrag={false}
+        selectionOnDrag
+        selectionKeyCode={['Shift']}
+        multiSelectionKeyCode={['Shift']}
+        deleteKeyCode={['Backspace', 'Delete']}
         onInit={setFlowInstance}
         onPaneClick={closeContextMenu}
+        onNodeContextMenu={(event, node) => {
+          event.preventDefault()
+
+          const selectedNodes = activeTask.nodes.filter((item) => item.selected)
+          const includesCurrent = selectedNodes.some((item) => item.id === node.id)
+          const contextTargets =
+            includesCurrent && selectedNodes.length > 1 ? selectedNodes : [node]
+
+          if (contextTargets.length > 1) {
+            openContextMenu({
+              kind: 'multiNode',
+              nodeIds: contextTargets.map((item) => item.id),
+              x: event.clientX,
+              y: event.clientY,
+            })
+            return
+          }
+
+          if (node.type === 'agent') {
+            openContextMenu({
+              kind: 'agent',
+              nodeId: node.id,
+              x: event.clientX,
+              y: event.clientY,
+            })
+            return
+          }
+
+          openContextMenu({
+            kind: 'dataCell',
+            nodeId: node.id,
+            x: event.clientX,
+            y: event.clientY,
+          })
+        }}
+        onSelectionContextMenu={(event, nodes) => {
+          event.preventDefault()
+          if (nodes.length <= 1) {
+            return
+          }
+
+          openContextMenu({
+            kind: 'multiNode',
+            nodeIds: nodes.map((node) => node.id),
+            x: event.clientX,
+            y: event.clientY,
+          })
+        }}
+        onEdgeContextMenu={(event, edge) => {
+          event.preventDefault()
+          openContextMenu({
+            kind: 'edge',
+            edgeId: edge.id,
+            x: event.clientX,
+            y: event.clientY,
+          })
+        }}
         onPaneContextMenu={(event) => {
           event.preventDefault()
+
+          const selectedNodes = activeTask.nodes.filter((item) => item.selected)
+          if (selectedNodes.length > 1) {
+            openContextMenu({
+              kind: 'multiNode',
+              nodeIds: selectedNodes.map((item) => item.id),
+              x: event.clientX,
+              y: event.clientY,
+            })
+            return
+          }
+
           if (!flowInstance) {
             return
           }
